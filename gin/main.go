@@ -7,9 +7,17 @@ import (
 )
 
 func main() {
-	r := gin.Default()
-	r.GET("/hello", func(c *gin.Context) {
-		c.String(http.StatusOK, "hello go")
+	server := gin.Default()
+	server.GET("/hello/:name", func(c *gin.Context) {
+		name := c.Param("name")
+		c.String(http.StatusOK, "hello go %s", name)
 	})
-	r.Run(":8080")
+	server.GET("/order", func(c *gin.Context) {
+		oid := c.Query("id")
+		c.String(http.StatusOK, "hello go %s", oid)
+	})
+	server.POST("/test", func(c *gin.Context) {
+		c.String(http.StatusOK, "hello post")
+	})
+	server.Run(":8080")
 }
