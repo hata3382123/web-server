@@ -13,11 +13,13 @@ const onFinish = (values: any) => {
             }
             if(typeof res.data == 'string') {
                 alert(res.data);
+                router.push('/users/profile')
             } else {
                 const msg = res.data?.msg || JSON.stringify(res.data)
                 alert(msg);
-                if(res.data.code == 0) {
-                    router.push('/articles/list')
+                // 后端登录成功返回 code=4、msg="登录成功"
+                if(res.data.code === 0 || res.data.code === 4) {
+                    router.push('/users/profile')
                 }
             }
         }).catch((err) => {

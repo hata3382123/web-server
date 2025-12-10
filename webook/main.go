@@ -7,10 +7,11 @@ import (
 	"webook/internal/repository/dao"
 	"webook/internal/service"
 	"webook/internal/web"
+	"webook/internal/web/middleware"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -38,8 +39,8 @@ func main() {
 	server.Use(cors.New(cors.Config{
 		//AllowOrigins:     []string{"https://foo.com"},
 		//AllowMethods:     []string{"PUT", "PATCH"},
-		AllowHeaders: []string{"authorization", "content-type"},
-		//ExposeHeaders:    []string{"Content-Length"},
+		AllowHeaders:     []string{"authorization", "content-type"},
+		ExposeHeaders:    []string{"x-jwt-token"},
 		AllowCredentials: true,
 		AllowOriginFunc: func(origin string) bool {
 			if strings.HasPrefix(origin, "http://localhost") {
@@ -50,8 +51,15 @@ func main() {
 		MaxAge: 12 * time.Hour,
 	}))
 
-	store := cookie.NewStore([]byte("secret"))
+	// store := cookie.NewStore([]byte("secret"))
+	// store := cookie.NewStore([]byte("secret"))
+	store, err := redis.NewStore(16, "tcp", "localhost:6379", "", "111111", []byte("fbVaSQV8cgR3YIxMBBoUNGoDJ3aFuCjCdDuR7iIUCxzoiSLheCqxIYdkudC9npYK"))
+	if err != nil {
+		panic(err)
+	}
+
 	server.Use(sessions.Sessions("mysession", store))
+	server.Use(middleware.NewLoginJWTMiddleBuilder().Build())
 	u.RegisterRoutes(server)
 	server.Run(":8080")
 }

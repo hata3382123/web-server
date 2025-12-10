@@ -10,3 +10,11 @@ services:
       - ./script/mysql/:/docker-entrypoint-initdb.d
     ports:
       - 13316:3306
+
+  redis:
+    image: 'bitnami/redis:latest'
+    environment: 
+      - REDIS_PASSWORD=111111
+      - ALLOW_EMPTY_PASSWORD=no
+    ports:
+      - 6379:6379
