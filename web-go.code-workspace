@@ -1,0 +1,25 @@
+{
+	"folders": [
+		{
+			"path": "webook",
+			"name": "webook"
+		},
+		{
+			"path": "webook-fe",
+			"name": "webook-fe"
+		}
+	],
+	"settings": {
+		"go.goroot": "",
+		"go.gopath": "",
+		"gopls": {
+			"build.directoryFilters": [
+				"webook-fe",
+				"gin",
+				"windows-amd64"
+			]
+		}
+	}
+}
+
+

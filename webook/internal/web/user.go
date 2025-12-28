@@ -20,7 +20,7 @@ type UserHandler struct {
 	passwordExp *regexp.Regexp
 }
 
-func NewUserHandler(svc *service.UserService) *UserHandler {
+func NewUserHandler(svc *service.UserService, codeSvc *service.CodeService) *UserHandler {
 	const (
 		emailRegexPattern    = `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`
 		passwordRegexPattern = `^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_\-+=]{6,8}$`
@@ -29,6 +29,7 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
 	passwordExp := regexp.MustCompile(passwordRegexPattern, regexp.None)
 	return &UserHandler{
 		svc:         svc,
+		codeSvc:     codeSvc,
 		emailExp:    emailExp,
 		passwordExp: passwordExp,
 	}
@@ -41,8 +42,11 @@ func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug.POST("/login", u.LoginJWT)
 	ug.POST("/edit", u.Edit)
 	ug.GET("/profile", u.ProfileJWT)
+	ug.POST("/login_sms/code/send", u.sendLoginSMSCode)
+	ug.POST("/login_sms", u.LoginSMS)
 }
-
+func (u *UserHandler) LoginSMS(ctx *gin.Context) {
+}
 func (u *UserHandler) SignUp(ctx *gin.Context) {
 	type SignUpReq struct {
 		Email           string `json:"email"`
@@ -233,7 +237,6 @@ func (u *UserHandler) ProfileJWT(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, gin.H{"code": 4, "msg": "这个profile", "data": user})
 }
-
 func (u *UserHandler) sendLoginSMSCode(ctx *gin.Context) {
 	type Req struct {
 		Phone string `json:"Phone"`
@@ -246,10 +249,15 @@ func (u *UserHandler) sendLoginSMSCode(ctx *gin.Context) {
 	}
 	err = u.codeSvc.Send(ctx, biz, req.Phone)
 	if err != nil {
-		ctx.String(http.StatusOK, "系统异常")
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
 		return
 	}
-	ctx.String(http.StatusOK, "发送成功")
+	ctx.JSON(http.StatusOK, Result{
+		Msg: "发送成功",
+	})
 }
 
 type UserClaims struct {

@@ -12,18 +12,28 @@ import (
 )
 
 type LoginJWTMiddleBuilder struct {
+	ignorePaths []string
 }
 
 func NewLoginJWTMiddleBuilder() *LoginJWTMiddleBuilder {
-	return &LoginJWTMiddleBuilder{}
+	return &LoginJWTMiddleBuilder{
+		ignorePaths: []string{"/users/signup", "/users/login"},
+	}
+}
+
+func (l *LoginJWTMiddleBuilder) IgnorePaths(paths ...string) *LoginJWTMiddleBuilder {
+	l.ignorePaths = append(l.ignorePaths, paths...)
+	return l
 }
 
 func (l *LoginJWTMiddleBuilder) Build() gin.HandlerFunc {
 	//用go的方式编码解码
 	return func(ctx *gin.Context) {
-		if ctx.Request.URL.Path == "/users/signup" ||
-			ctx.Request.URL.Path == "/users/login" {
-			return
+		// 检查路径是否在忽略列表中
+		for _, path := range l.ignorePaths {
+			if ctx.Request.URL.Path == path {
+				return
+			}
 		}
 		// 用 JWT 校验：优先 x-jwt-token，兼容 Authorization: Bearer <token>
 		tokenHeader := strings.TrimSpace(ctx.GetHeader("x-jwt-token"))
