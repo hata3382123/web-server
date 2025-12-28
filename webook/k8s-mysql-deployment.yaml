@@ -1,26 +1,38 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: $title$
+  name: webook-mysql
   labels:
-    app: $title$
+    app: webook-mysql
 spec:
-  replicas: $1$
+  replicas: 1
   selector:
     matchLabels:
-      app: $title$
+      app: webook-mysql
   template:
     metadata:
-      name: $title$
+      name: webook-mysql
       labels:
-        app: $title$
+        app: webook-mysql
     spec:
       containers:
-        - name: $title$
-          image: $nginx$
+        - name: webook-mysql
+          image: mysql:8.0
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "123456"
           imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - #对应到mysql数据存储的位置
+            - mountPath: /var/lib/mysql
+              #我的POD有很多个volumes 我要用哪个
+              name: mysql-storage
           ports:
-            - containerPort: $80$
-              protocol: $TCP$
+            - containerPort: 3306
       restartPolicy: Always
-      $END$
+      #我整个POD有哪些
+      volumes:
+        - name: mysql-storage
+          persistentVolumeClaim:
+            claimName: webook-mysql-claim
+      

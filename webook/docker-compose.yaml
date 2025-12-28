@@ -14,7 +14,6 @@ services:
   redis:
     image: 'bitnami/redis:latest'
     environment: 
-      - REDIS_PASSWORD=111111
-      - ALLOW_EMPTY_PASSWORD=no
+      - ALLOW_EMPTY_PASSWORD=yes
     ports:
       - 6379:6379

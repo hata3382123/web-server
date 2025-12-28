@@ -15,6 +15,7 @@ import (
 
 type UserHandler struct {
 	svc         *service.UserService
+	codeSvc     *service.CodeService
 	emailExp    *regexp.Regexp
 	passwordExp *regexp.Regexp
 }
@@ -147,7 +148,8 @@ func (u *UserHandler) LoginJWT(ctx *gin.Context) {
 		return
 	}
 	claims := UserClaims{
-		Uid: user.Id,
+		Uid:       user.Id,
+		UserAgent: ctx.Request.UserAgent(),
 		RegisteredClaims: jwt.RegisteredClaims{
 			// 根据需要设置过期时间、颁发者等
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute)),
@@ -172,7 +174,6 @@ func (u *UserHandler) LoginOut(ctx *gin.Context) {
 	sess.Save()
 	ctx.JSON(http.StatusOK, gin.H{"code": 4, "msg": "退出登录成功"})
 }
-
 func (u *UserHandler) Edit(ctx *gin.Context) {
 	type Editreq struct {
 		Nickname string `json:"nickname"`
@@ -233,8 +234,27 @@ func (u *UserHandler) ProfileJWT(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"code": 4, "msg": "这个profile", "data": user})
 }
 
+func (u *UserHandler) sendLoginSMSCode(ctx *gin.Context) {
+	type Req struct {
+		Phone string `json:"Phone"`
+	}
+	const biz = "login"
+	var req Req
+	err := ctx.Bind(&req)
+	if err != nil {
+		return
+	}
+	err = u.codeSvc.Send(ctx, biz, req.Phone)
+	if err != nil {
+		ctx.String(http.StatusOK, "系统异常")
+		return
+	}
+	ctx.String(http.StatusOK, "发送成功")
+}
+
 type UserClaims struct {
 	jwt.RegisteredClaims
 	//声明自己要放进token里的数据
-	Uid int64
+	Uid       int64
+	UserAgent string
 }

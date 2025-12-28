@@ -1,17 +1,19 @@
-apiVersion: v1
-kind: Pod
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
-  name: $title$
-  labels:
-    role: $title$
+  name: webook-ingress
 spec:
-  containers:
-    - name: $title$
-      image: $nginx$
-      imagePullPolicy: IfNotPresent
-      ports:
-        - name: $title$
-          containerPort: $80$
-          protocol: $TCP$
-  restartPolicy: Always
-  $END$
+  #这里要用nginx
+  ingressClassName: nginx
+  rules:
+    - host: live.webook.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: webook
+                port:
+                  number: 80
+            pathType: Prefix
+            path: /
+  
