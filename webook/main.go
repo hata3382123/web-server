@@ -1,7 +1,6 @@
 package main
 
 import (
-	"net/http"
 	"strings"
 	"time"
 	"webook/internal/repository"
@@ -50,9 +49,6 @@ func main() {
 	u := web.NewUserHandler(svc, codeSvc)
 	server := gin.Default()
 
-	server.GET("/hello", func(ctx *gin.Context) {
-		ctx.String(http.StatusOK, "你好 大家好")
-	})
 	//use 作用于全部路由
 	server.Use(cors.New(cors.Config{
 		//AllowOrigins:     []string{"https://foo.com"},
