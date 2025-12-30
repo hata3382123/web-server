@@ -49,41 +49,73 @@ func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 }
 func (u *UserHandler) LoginSMS(ctx *gin.Context) {
 	type Req struct {
-		Phone string `json:"Phone"`
-		Code  string `json:"Code"`
+		Phone string `json:"phone" binding:"required"`
+		Code  string `json:"code" binding:"required"`
 	}
 	var req Req
 	err := ctx.Bind(&req)
 	if err != nil {
+		ctx.JSON(http.StatusBadRequest, Result{
+			Code: 1,
+			Msg:  "请求参数错误: " + err.Error(),
+		})
 		return
 	}
+
 	ok, err := u.codeSvc.Verify(ctx, biz, req.Phone, req.Code)
 	if err != nil {
+		fmt.Printf("Verify error: %v\n", err)
 		ctx.JSON(http.StatusOK, Result{
 			Code: 5,
-			Msg:  "系统错误",
+			Msg:  "系统错误: " + err.Error(),
 		})
 		return
 	}
 	if !ok {
+
 		ctx.JSON(http.StatusOK, Result{
 			Code: 5,
 			Msg:  "验证码输入错误",
 		})
+		return
 	}
+
+	user, err := u.svc.FindOrCreate(ctx, req.Phone)
+	if err != nil {
+		fmt.Printf("FindOrCreate error: %v\n", err)
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误: " + err.Error(),
+		})
+		return
+	}
+
+	if err = u.setJWTToken(ctx, user); err != nil {
+		fmt.Printf("setJWTToken error: %v\n", err)
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误: " + err.Error(),
+		})
+		return
+	}
+	fmt.Printf("LoginSMS success, returning code: 0\n")
 	ctx.JSON(http.StatusOK, Result{
-		Code: 5,
-		Msg:  "验证码校验成功",
+		Code: 0,
+		Msg:  "登录成功",
 	})
 }
 func (u *UserHandler) sendLoginSMSCode(ctx *gin.Context) {
 	type Req struct {
-		Phone string `json:"Phone"`
+		Phone string `json:"phone" binding:"required"`
 	}
 
 	var req Req
 	err := ctx.Bind(&req)
 	if err != nil {
+		ctx.JSON(http.StatusBadRequest, Result{
+			Code: 1,
+			Msg:  "请求参数错误: " + err.Error(),
+		})
 		return
 	}
 	err = u.codeSvc.Send(ctx, biz, req.Phone)

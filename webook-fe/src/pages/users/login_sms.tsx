@@ -80,6 +80,7 @@ const LoginFormSMS: React.FC = () => {
         setLoading(true);
         try {
             const res = await axios.post("/users/login_sms", values);
+            console.log("Login response:", res.data);
             
             if (res.status === 200) {
                 if (res.data.code === 0) {
@@ -87,11 +88,14 @@ const LoginFormSMS: React.FC = () => {
                     router.push('/users/profile');
                     return;
                 }
-                message.warning(res.data.msg || '登录失败');
+                // code 不为 0，显示错误信息
+                const errorMsg = res.data.msg || '登录失败';
+                message.error(errorMsg);
             } else {
                 message.error(res.statusText || '登录失败');
             }
         } catch (err: any) {
+            console.error("Login error:", err);
             const errorMsg = err?.response?.data?.msg || err?.message || "系统错误，请重试";
             message.error(errorMsg);
         } finally {

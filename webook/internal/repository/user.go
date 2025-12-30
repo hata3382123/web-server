@@ -2,14 +2,16 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"time"
 	"webook/internal/domain"
 	"webook/internal/repository/cache"
 	"webook/internal/repository/dao"
 )
 
 var (
-	ErrUserDuplicateEmail = dao.ErrUserDuplicateEmail
-	ErrUserNotFound       = dao.ErrUserNotFound
+	ErrUserDuplicate = dao.ErrUserDuplicate
+	ErrUserNotFound  = dao.ErrUserNotFound
 )
 
 type UserRepository struct {
@@ -25,9 +27,7 @@ func NewUserRepository(dao *dao.UserDao, c *cache.UserCache) *UserRepository {
 }
 
 func (r *UserRepository) Create(ctx context.Context, u domain.User) error {
-	return r.dao.Insert(ctx, dao.User{
-		Email:    u.Email,
-		Password: u.Password})
+	return r.dao.Insert(ctx, r.domainToEntity(u))
 }
 
 func (r *UserRepository) FindByEmail(ctx context.Context, email string) (domain.User, error) {
@@ -35,11 +35,14 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (domain.
 	if err != nil {
 		return domain.User{}, err
 	}
-	return domain.User{
-		Id:       u.Id,
-		Email:    u.Email,
-		Password: u.Password,
-	}, nil
+	return r.entityToDomain(u), nil
+}
+func (r *UserRepository) FindByPhone(ctx context.Context, phone string) (domain.User, error) {
+	u, err := r.dao.FindByPhone(ctx, phone)
+	if err != nil {
+		return domain.User{}, err
+	}
+	return r.entityToDomain(u), nil
 }
 func (r *UserRepository) Update(ctx context.Context, u domain.User) error {
 	return r.dao.Update(ctx, dao.User{
@@ -54,7 +57,6 @@ func (r *UserRepository) FindById(ctx context.Context, userId int64) (domain.Use
 	//if err != nil {
 	//	return domain.User{}, err
 	//}
-
 	//缓存里有数据
 	u, err := r.cache.Get(ctx, userId)
 	if err == nil {
@@ -69,16 +71,38 @@ func (r *UserRepository) FindById(ctx context.Context, userId int64) (domain.Use
 	if err != nil {
 		return domain.User{}, err
 	}
-	u = domain.User{
-		Id:       ue.Id,
-		Email:    ue.Email,
-		Password: ue.Password,
-		Nickname: ue.Nickname,
-		Birthday: ue.Birthday,
-		AboutMe:  ue.AboutMe,
-	}
+	u = r.entityToDomain(ue)
 	err = r.cache.Set(ctx, u)
 	return u, nil
+}
+func (r *UserRepository) domainToEntity(u domain.User) dao.User {
+	var ctime int64
+	if !u.Ctime.IsZero() {
+		ctime = u.Ctime.UnixMilli()
+	}
+	return dao.User{
+		Id: u.Id,
+		Email: sql.NullString{
+			String: u.Email,
+			Valid:  u.Email != "",
+		},
+		Password: u.Password,
+		Phone: sql.NullString{
+			String: u.Phone,
+			Valid:  u.Phone != "",
+		},
+		Ctime: ctime,
+	}
+}
+
+func (r *UserRepository) entityToDomain(u dao.User) domain.User {
+	return domain.User{
+		Id:       u.Id,
+		Email:    u.Email.String,
+		Password: u.Password,
+		Phone:    u.Phone.String,
+		Ctime:    time.UnixMilli(u.Ctime),
+	}
 }
 
 //缓存里没数据

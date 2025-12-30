@@ -36,8 +36,7 @@ func main() {
 	}
 	ud := dao.NewUserDao(db)
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "127.0.0.1:6379",
-		Password: "111111",
+		Addr: "127.0.0.1:6379",
 	})
 	userCache := cache.NewUserCache(redisClient)
 	repo := repository.NewUserRepository(ud, userCache)

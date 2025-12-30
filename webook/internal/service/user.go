@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	ErrUserDuplicateEmail    = repository.ErrUserDuplicateEmail
+	ErrUserDuplicate         = repository.ErrUserDuplicate
 	ErrInvalidUserOrPassword = errors.New("账号或密码不正确")
 )
 
@@ -34,7 +34,34 @@ func (svc *UserService) SignUp(ctx context.Context, u domain.User) error {
 	u.Password = string(hash)
 	return svc.repo.Create(ctx, u)
 }
-
+func (svc *UserService) FindOrCreate(ctx context.Context, phone string) (domain.User, error) {
+	u, err := svc.repo.FindByPhone(ctx, phone)
+	//判断是否有用户
+	if err == nil {
+		// 找到了用户
+		return u, nil
+	}
+	if err != repository.ErrUserNotFound {
+		// 其他错误
+		return domain.User{}, err
+	}
+	// 用户不存在，创建新用户
+	u = domain.User{
+		Phone: phone,
+	}
+	err = svc.repo.Create(ctx, u)
+	if err != nil && err != ErrUserDuplicate {
+		return u, err
+	}
+	//这里会遇到主从延迟的问题，如果查询不到，重试一次
+	u, err = svc.repo.FindByPhone(ctx, phone)
+	if err != nil {
+		// 如果还是找不到，可能是主从延迟，返回创建的用户（但ID可能为0）
+		// 或者返回错误
+		return domain.User{}, err
+	}
+	return u, nil
+}
 func (svc *UserService) Login(ctx context.Context, email, password string) (domain.User, error) {
 	u, err := svc.repo.FindByEmail(ctx, email)
 	if err == repository.ErrUserNotFound {

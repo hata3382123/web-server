@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"time"
 
@@ -10,8 +11,8 @@ import (
 )
 
 var (
-	ErrUserDuplicateEmail = errors.New("邮箱冲突")
-	ErrUserNotFound       = gorm.ErrRecordNotFound
+	ErrUserDuplicate = errors.New("邮箱或手机号冲突")
+	ErrUserNotFound  = gorm.ErrRecordNotFound
 )
 
 type UserDao struct {
@@ -29,6 +30,11 @@ func (dao *UserDao) FindByEmail(ctx context.Context, email string) (User, error)
 	err := dao.db.WithContext(ctx).Where("email = ?", email).First(&u).Error
 	return u, err
 }
+func (dao *UserDao) FindByPhone(ctx context.Context, phone string) (User, error) {
+	var u User
+	err := dao.db.WithContext(ctx).Where("phone = ?", phone).First(&u).Error
+	return u, err
+}
 
 func (dao *UserDao) Insert(ctx context.Context, u User) error {
 	//存毫秒数
@@ -39,7 +45,8 @@ func (dao *UserDao) Insert(ctx context.Context, u User) error {
 	if mysqlErr, ok := err.(*mysql.MySQLError); ok {
 		const uniqueConflictsErrNo uint16 = 1062
 		if mysqlErr.Number == uniqueConflictsErrNo {
-			return ErrUserDuplicateEmail
+			//邮箱或手机号码冲突
+			return ErrUserDuplicate
 		}
 	}
 	return err
@@ -75,10 +82,10 @@ func (dao *UserDao) FindById(ctx context.Context, userId int64) (User, error) {
 // user 直接对应 数据库
 // 有些人叫做entity 有些人叫model 有些人叫做PO
 type User struct {
-	Id       int64  `gorm:"primaryKey,autoIncrement"`
-	Email    string `gorm:"unique"`
+	Id       int64          `gorm:"primaryKey,autoIncrement"`
+	Email    sql.NullString `gorm:"unique"`
 	Password string
-
+	Phone    sql.NullString `gorm:"unique"`
 	//往这里加需要的字段
 
 	//创建时间 毫秒数
