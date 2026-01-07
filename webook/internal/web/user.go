@@ -16,13 +16,13 @@ import (
 const biz = "login"
 
 type UserHandler struct {
-	svc         *service.UserService
-	codeSvc     *service.CodeService
+	svc         service.UserService
+	codeSvc     service.CodeService
 	emailExp    *regexp.Regexp
 	passwordExp *regexp.Regexp
 }
 
-func NewUserHandler(svc *service.UserService, codeSvc *service.CodeService) *UserHandler {
+func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserHandler {
 	const (
 		emailRegexPattern    = `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`
 		passwordRegexPattern = `^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_\-+=]{6,8}$`
@@ -174,14 +174,14 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 		Password: req.Password,
 	})
 	if err == service.ErrUserDuplicate {
-		ctx.String(http.StatusOK, "邮箱冲突")
+		ctx.JSON(http.StatusOK, gin.H{"msg": "邮箱冲突"})
 		return
 	}
 	if err != nil {
-		ctx.String(http.StatusOK, "系统异常")
+		ctx.JSON(http.StatusOK, gin.H{"msg": "系统异常"})
 		return
 	}
-	ctx.String(http.StatusOK, "signup success")
+	ctx.JSON(http.StatusOK, gin.H{"msg": "注册成功"})
 	//数据库操作
 
 }
@@ -280,9 +280,8 @@ func (u *UserHandler) Edit(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "请求参数错误: " + err.Error()})
 		return
 	}
-	// 中间件已经验证了登录，可以直接从 session 获取 userId
-	sess := sessions.Default(ctx)
-	userId := sess.Get("userId").(int64)
+	// 中间件已经验证了登录，可以直接从 context 获取 userId
+	userId := ctx.MustGet("userId").(int64)
 	err := u.svc.Edit(ctx, domain.User{
 		Id:       userId,
 		Nickname: req.Nickname,

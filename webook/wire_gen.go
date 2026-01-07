@@ -7,14 +7,13 @@
 package main
 
 import (
+	"github.com/gin-gonic/gin"
 	"webook/internal/repository"
 	"webook/internal/repository/cache"
 	"webook/internal/repository/dao"
 	"webook/internal/service"
 	"webook/internal/web"
 	"webook/ioc"
-
-	"github.com/gin-gonic/gin"
 )
 
 // Injectors from wire.go:

@@ -20,16 +20,20 @@ var luaSetCode string
 //go:embed lua/verify_code.lua
 var luaVerifyCode string
 
-type CodeCache struct {
+type CodeCache interface {
+	Verify(ctx context.Context, biz, phone, inputCode string) (bool, error)
+	Set(ctx context.Context, biz, phone, code string) error
+}
+type RedisCodeCache struct {
 	client redis.Cmdable
 }
 
-func NewCodeCache(client redis.Cmdable) *CodeCache {
-	return &CodeCache{
+func NewCodeCache(client redis.Cmdable) CodeCache {
+	return &RedisCodeCache{
 		client: client,
 	}
 }
-func (c *CodeCache) Verify(ctx context.Context, biz, phone, inputCode string) (bool, error) {
+func (c *RedisCodeCache) Verify(ctx context.Context, biz, phone, inputCode string) (bool, error) {
 	res, err := c.client.Eval(ctx, luaVerifyCode, []string{c.Key(biz, phone)}, inputCode).Int64()
 	if err != nil {
 		return false, err
@@ -47,7 +51,7 @@ func (c *CodeCache) Verify(ctx context.Context, biz, phone, inputCode string) (b
 	return false, nil
 }
 
-func (c *CodeCache) Set(ctx context.Context, biz, phone, code string) error {
+func (c *RedisCodeCache) Set(ctx context.Context, biz, phone, code string) error {
 	res, err := c.client.Eval(ctx, luaSetCode, []string{c.Key(biz, phone)}, code).Int64()
 	if err != nil {
 		return err
@@ -63,6 +67,6 @@ func (c *CodeCache) Set(ctx context.Context, biz, phone, code string) error {
 		return errors.New("系统错误")
 	}
 }
-func (c *CodeCache) Key(biz, phone string) string {
+func (c *RedisCodeCache) Key(biz, phone string) string {
 	return fmt.Sprintf("phone_code:%s:%s", biz, phone)
 }
