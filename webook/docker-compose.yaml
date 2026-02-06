@@ -17,3 +17,11 @@ services:
       - ALLOW_EMPTY_PASSWORD=yes
     ports:
       - 16379:6379
+
+  etcd:
+    image: 'quay.io/coreos/etcd:v3.5.16'
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
+    ports:
+      #用12379的端口来链接etcd
+      - 12379:2379

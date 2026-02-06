@@ -1,9 +1,36 @@
 package main
 
+import (
+	"github.com/spf13/pflag"
+	_ "github.com/spf13/pflag"
+	"github.com/spf13/viper"
+)
+
 func main() {
+	initViperV1()
 	server := InitWebServer()
 	server.Run(":8888")
 }
+func initViperV1() {
+	//viper.SetConfigFile("./config/dev.yaml")
+	cfile := pflag.String("config", "./config/dev.yaml", "配置文件路径")
+	pflag.Parse()
+	viper.SetConfigFile(*cfile)
+	err := viper.ReadInConfig()
+	if err != nil {
+		panic(err)
+	}
+}
+
+// func initViper() {
+// 	viper.SetConfigName("dev")
+// 	viper.SetConfigType("yaml")
+// 	viper.AddConfigPath("./config")
+// 	err := viper.ReadInConfig()
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// }
 
 //func initUser(db *gorm.DB, rdb redis.Cmdable) *web.UserHandler {
 //	ud := dao.NewUserDao(db)

@@ -5,17 +5,17 @@ import (
 	"time"
 	"webook/internal/web"
 	"webook/internal/web/middleware"
-	"webook/pkg/ginx/middleware/ratelimit"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 )
 
-func InitWebServer(mdls []gin.HandlerFunc, hdl *web.UserHandler) *gin.Engine {
+func InitWebServer(mdls []gin.HandlerFunc, userHdl *web.UserHandler, OAuth2WechatHandler *web.OAuth2WechatHandler) *gin.Engine {
 	server := gin.Default()
 	server.Use(mdls...)
-	hdl.RegisterRoutes(server)
+	userHdl.RegisterRoutes(server)
+	OAuth2WechatHandler.RegisterRoutes(server)
 	return server
 }
 
@@ -24,7 +24,7 @@ func InitMiddlewares(rdb redis.Cmdable) []gin.HandlerFunc {
 		middleware.NewLoginJWTMiddleBuilder().
 			IgnorePaths("/users/login_sms/code/send").
 			IgnorePaths("/users/login_sms").Build(),
-		ratelimit.NewBuilder(rdb, time.Second, 100).Build(),
+		//ratelimit.NewBuilder().Build(),
 	}
 }
 func corsHdl() gin.HandlerFunc {

@@ -26,9 +26,11 @@ func InitWebServer() *gin.Engine {
 		repository.NewCodeRepository,
 		service.NewUserService,
 		service.NewCodeService,
+		ioc.InitWechatService,
 		//基于内存实现
 		ioc.InitSMSService,
 		web.NewUserHandler,
+		web.NewOAuth2WechatHandler,
 		ioc.InitWebServer,
 		ioc.InitMiddlewares,
 	)
