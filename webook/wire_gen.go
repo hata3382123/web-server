@@ -16,6 +16,11 @@ import (
 	"webook/ioc"
 )
 
+import (
+	_ "github.com/spf13/pflag"
+	_ "go.uber.org/zap"
+)
+
 // Injectors from wire.go:
 
 func InitWebServer() *gin.Engine {
@@ -32,7 +37,11 @@ func InitWebServer() *gin.Engine {
 	codeService := service.NewCodeService(codeRepository, smsService)
 	userHandler := web.NewUserHandler(userService, codeService)
 	wechatService := ioc.InitWechatService()
-	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService,userService)
-	engine := ioc.InitWebServer(v, userHandler, oAuth2WechatHandler)
+	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, userService)
+	articleDao := dao.NewGORMArticleDao(db)
+	articleRepository := repository.NewArticleRepository(articleDao)
+	articleService := service.NewArticleService(articleRepository)
+	articleHandler := web.NewArticleHandler(articleService)
+	engine := ioc.InitWebServer(v, userHandler, oAuth2WechatHandler, articleHandler)
 	return engine
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	jwt "github.com/golang-jwt/jwt/v5"
+	"go.uber.org/zap"
 )
 
 const biz = "login"
@@ -69,10 +70,10 @@ func (u *UserHandler) LoginSMS(ctx *gin.Context) {
 			Code: 5,
 			Msg:  "系统错误: " + err.Error(),
 		})
+		zap.L().Error("校验验证码出错", zap.Error(err))
 		return
 	}
 	if !ok {
-
 		ctx.JSON(http.StatusOK, Result{
 			Code: 5,
 			Msg:  "验证码输入错误",
@@ -96,6 +97,7 @@ func (u *UserHandler) LoginSMS(ctx *gin.Context) {
 			Code: 5,
 			Msg:  "系统错误: " + err.Error(),
 		})
+		zap.L().Error("token设置异常", zap.Error(err))
 		return
 	}
 	fmt.Printf("LoginSMS success, returning code: 0\n")

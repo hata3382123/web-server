@@ -4,13 +4,27 @@ import (
 	"github.com/spf13/pflag"
 	_ "github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
+	_ "go.uber.org/zap"
 )
 
 func main() {
+	initLogger()
 	initViperV1()
 	server := InitWebServer()
 	server.Run(":8888")
 }
+func initLogger() {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		panic(err)
+	}
+	zap.L().Info("这里不显示")
+	//如果不replace 直接用 zap.L 什么都打不出来
+	zap.ReplaceGlobals(logger)
+	zap.L().Info("这里能用")
+}
+
 func initViperV1() {
 	//viper.SetConfigFile("./config/dev.yaml")
 	cfile := pflag.String("config", "./config/dev.yaml", "配置文件路径")
