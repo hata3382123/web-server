@@ -11,6 +11,8 @@ import (
 type ArticleDao interface {
 	Insert(ctx context.Context, art Article) (int64, error)
 	Update(ctx context.Context, art Article) error
+	SyncV2(ctx context.Context, art Article) (int64, error)
+	SyncStatus(ctx context.Context, id int64, authorId int64, status uint8) error
 }
 
 type GORMArticleDao struct {
@@ -52,6 +54,41 @@ func (dao *GORMArticleDao) Update(ctx context.Context, art Article) error {
 	return nil
 }
 
+func (dao *GORMArticleDao) SyncV2(ctx context.Context, art Article) (int64, error) {
+	var id = art.Id
+	err := dao.db.Transaction(func(tx *gorm.DB) error {
+		txDAO := NewGORMArticleDao(tx)
+		if id > 0 {
+			err := txDAO.Update(ctx, art)
+			if err != nil {
+				return err
+			}
+		} else {
+			var err error
+			id, err = txDAO.Insert(ctx, art)
+			if err != nil {
+				return err
+			}
+		}
+		// 操作线上库（这里简化处理，实际可能需要 Upsert 到另一张表）
+		return nil
+	})
+	return id, err
+}
+
+func (dao *GORMArticleDao) SyncStatus(ctx context.Context, id int64, authorId int64, status uint8) error {
+	res := dao.db.WithContext(ctx).Model(&Article{}).
+		Where("id = ? AND author_id = ?", id, authorId).
+		Update("status", status)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
 type Article struct {
 	Id int64 `gorm:"primaryKey,autoIncrement"`
 	//长度1024
@@ -70,6 +107,7 @@ type Article struct {
 	//在author_id上建立索引
 	AuthorId int64 `gorm:"index"`
 	//在ctime上建立索引
-	Ctime int64
-	Utime int64
+	Status uint8
+	Ctime  int64
+	Utime  int64
 }
